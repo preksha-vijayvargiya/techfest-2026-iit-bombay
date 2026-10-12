@@ -1,0 +1,3456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Techfest '26 — IIT Bombay | Asia's Largest Science & Tech Festival</title>
+  
+  <!-- Premium Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@600;700;900&family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- Three.js Library for 3D Photorealistic Earth & Space Engine -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <style>
+    :root {
+      --bg-dark: #030712;
+      --surface-dark: #0b0f19;
+      --surface-card: rgba(15, 23, 42, 0.85);
+      --surface-elevated: rgba(30, 41, 59, 0.9);
+      --border-color: rgba(255, 255, 255, 0.14);
+      --border-hover: rgba(56, 189, 248, 0.6);
+      --text-main: #ffffff;
+      --text-muted: #cbd5e1;
+      --primary-gold: #fbbf24;
+      --primary-cyan: #38bdf8;
+      --primary-blue: #3b82f6;
+      --primary-emerald: #10b981;
+      --accent-glow: rgba(56, 189, 248, 0.35);
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 24px;
+      --transition: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      overflow-x: hidden;
+      min-height: 100vh;
+      selection-background-color: #38bdf8;
+      selection-color: #000;
+      cursor: default;
+    }
+
+    /* Global Dynamic Constellation Canvas Background */
+    #global-bg-canvas {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.6;
+    }
+
+    /* Custom Glowing Futuristic Cursor */
+    #cyber-cursor {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 10px;
+      height: 10px;
+      background: #38bdf8;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 99999999;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 15px #38bdf8, 0 0 30px #38bdf8;
+      transition: width 0.2s ease, height 0.2s ease, background 0.2s ease;
+    }
+
+    #cyber-cursor-trail {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 38px;
+      height: 38px;
+      border: 1.5px solid rgba(56, 189, 248, 0.6);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 99999998;
+      transform: translate(-50%, -50%);
+      transition: transform 0.12s ease-out, width 0.2s ease, height 0.2s ease, border-color 0.2s ease;
+    }
+
+    body.hovering-link #cyber-cursor {
+      width: 18px;
+      height: 18px;
+      background: #fbbf24;
+      box-shadow: 0 0 20px #fbbf24;
+    }
+
+    body.hovering-link #cyber-cursor-trail {
+      width: 54px;
+      height: 54px;
+      border-color: #fbbf24;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #030712;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #38bdf8;
+    }
+
+    /* DYNAMIC BUTTON CLICK MOTION & RIPPLE FX */
+    button, .btn-solid-lg, .btn-outline-lg, .nav-btn-primary, .switcher-tab, .social-icon-btn, .landing-card, .workshop-card, .tariff-card, .speaker-card, .icon-btn {
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.22s ease, border-color 0.22s ease, background-color 0.22s ease;
+      user-select: none;
+    }
+
+    button:active, .btn-solid-lg:active, .btn-outline-lg:active, .nav-btn-primary:active, .switcher-tab:active, .social-icon-btn:active, .icon-btn:active {
+      transform: scale(0.93) translateY(3px) !important;
+      box-shadow: 0 2px 10px rgba(56, 189, 248, 0.4) !important;
+    }
+
+    .btn-ripple {
+      position: absolute;
+      border-radius: 50%;
+      transform: scale(0);
+      animation: rippleFx 0.65s linear;
+      background: rgba(56, 189, 248, 0.45);
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.8);
+      pointer-events: none;
+      width: 100px;
+      height: 100px;
+      margin-left: -50px;
+      margin-top: -50px;
+    }
+
+    @keyframes rippleFx {
+      to {
+        transform: scale(3.5);
+        opacity: 0;
+      }
+    }
+
+    /* =========================================================
+       CINEMATIC 3D EARTH & UNIVERSE INTRO SEQUENCER
+    ========================================================= */
+    #intro-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 99999;
+      background: #000000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      transition: opacity 0.7s var(--transition), visibility 0.7s ease;
+    }
+
+    #three-canvas-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    .intro-hud-top {
+      position: absolute;
+      top: 24px;
+      left: 36px;
+      right: 36px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 10;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.7);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      pointer-events: none;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(15, 23, 42, 0.8);
+      padding: 6px 14px;
+      border-radius: 99px;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      backdrop-filter: blur(8px);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background: #38bdf8;
+      border-radius: 50%;
+      box-shadow: 0 0 12px #38bdf8;
+      animation: pulseDot 1.5s infinite;
+    }
+    @keyframes pulseDot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.3; transform: scale(0.8); } }
+
+    .skip-btn {
+      pointer-events: auto;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: #fff;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      padding: 8px 20px;
+      border-radius: 99px;
+      cursor: pointer;
+      backdrop-filter: blur(12px);
+      transition: all 0.3s ease;
+    }
+    .skip-btn:hover {
+      background: #38bdf8;
+      color: #000;
+      border-color: #38bdf8;
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.5);
+    }
+
+    #intro-center-layer {
+      position: relative;
+      z-index: 10;
+      max-width: 950px;
+      text-align: center;
+      padding: 0 24px;
+      pointer-events: none;
+      transform: translateY(-20px);
+    }
+
+    /* Mesmerizing Intro Typography & Vibrant Visual Enhancements */
+    .mesmerizing-title {
+      font-family: 'Cinzel Decorative', 'Cinzel', serif;
+      font-size: clamp(2.0rem, 4.6vw, 3.8rem);
+      font-weight: 900;
+      line-height: 1.25;
+      letter-spacing: 0.04em;
+      background: linear-gradient(135deg, #ffffff 0%, #7dd3fc 25%, #38bdf8 50%, #fbbf24 75%, #f43f5e 100%);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: introGlowGradient 3.5s ease infinite;
+      filter: drop-shadow(0 0 25px rgba(56, 189, 248, 0.75)) drop-shadow(0 0 45px rgba(251, 191, 36, 0.45));
+      opacity: 0;
+      transform: scale(0.9) translateY(18px);
+      transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes introGlowGradient {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .intro-text-gold {
+      background: linear-gradient(135deg, #ffe066 0%, #fbbf24 50%, #f59e0b 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 0 18px rgba(251, 191, 36, 0.9));
+    }
+
+    .intro-text-cyan {
+      background: linear-gradient(135deg, #a5f3fc 0%, #38bdf8 50%, #00f3ff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 0 18px rgba(56, 189, 248, 0.9));
+    }
+
+    .mesmerizing-sub {
+      font-family: 'Outfit', sans-serif;
+      font-size: clamp(0.9rem, 1.6vw, 1.15rem);
+      font-weight: 600;
+      letter-spacing: 0.22em;
+      color: #f8fafc;
+      text-transform: uppercase;
+      margin-top: 20px;
+      padding: 10px 28px;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(56, 189, 248, 0.5);
+      border-radius: 99px;
+      display: inline-block;
+      box-shadow: 0 0 30px rgba(56, 189, 248, 0.3), inset 0 0 15px rgba(56, 189, 248, 0.15);
+      backdrop-filter: blur(12px);
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity 0.6s ease 0.15s, transform 0.6s ease 0.15s;
+    }
+
+    .mesmerizing-sub .sub-gold {
+      color: #fbbf24;
+      font-weight: 800;
+      text-shadow: 0 0 14px rgba(251, 191, 36, 0.7);
+    }
+
+    .mesmerizing-title.active, .mesmerizing-sub.active {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+
+    /* Targeted HUD Card on IIT Bombay Location */
+    #target-hud {
+      position: absolute;
+      z-index: 20;
+      display: none;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .crosshair-reticle {
+      width: 90px;
+      height: 90px;
+      border: 1.5px dashed rgba(56, 189, 248, 0.9);
+      border-radius: 50%;
+      position: relative;
+      animation: rotateReticle 8s linear infinite;
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.3);
+    }
+    @keyframes rotateReticle { 100% { transform: rotate(360deg); } }
+
+    .crosshair-reticle::before, .crosshair-reticle::after {
+      content: '';
+      position: absolute;
+      background: #38bdf8;
+    }
+    .crosshair-reticle::before { width: 100%; height: 1.5px; top: 50%; left: 0; }
+    .crosshair-reticle::after { height: 100%; width: 1.5px; left: 50%; top: 0; }
+
+    .beacon-data-card {
+      position: absolute;
+      top: -20px;
+      left: 105px;
+      white-space: nowrap;
+      background: rgba(3, 7, 18, 0.95);
+      border: 1.5px solid rgba(56, 189, 248, 0.6);
+      padding: 14px 20px;
+      border-radius: 10px;
+      font-size: 11.5px;
+      color: #f8fafc;
+      letter-spacing: 0.08em;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.9), 0 0 30px rgba(56, 189, 248, 0.3);
+      backdrop-filter: blur(12px);
+      animation: floatCard 0.8s var(--transition);
+    }
+
+    @keyframes floatCard {
+      0% { opacity: 0; transform: translateX(-15px); }
+      100% { opacity: 1; transform: translateX(0); }
+    }
+
+    .beacon-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 4px;
+      letter-spacing: 0.12em;
+    }
+
+    .beacon-address {
+      color: #cbd5e1;
+      font-size: 11px;
+      margin-bottom: 6px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .beacon-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #10b981;
+      font-weight: 700;
+      font-size: 10px;
+    }
+
+    .intro-hud-bottom {
+      position: absolute;
+      bottom: 24px;
+      left: 36px;
+      right: 36px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      z-index: 10;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.6);
+      letter-spacing: 0.12em;
+      pointer-events: none;
+    }
+
+    .timeline-track {
+      width: 280px;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.15);
+      position: relative;
+      margin-top: 8px;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .timeline-fill {
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #38bdf8, #fbbf24);
+      box-shadow: 0 0 15px #38bdf8;
+    }
+
+    #blast-flash-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 100;
+      background: #ffffff;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease;
+    }
+
+    /* =========================================================
+       MAIN SITE (Architectural, High Contrast & Glassmorphic)
+    ========================================================= */
+    #site-wrapper {
+      position: relative;
+      z-index: 1;
+      opacity: 0;
+      transform: scale(0.98);
+      transition: opacity 1.2s var(--transition), transform 1.2s var(--transition);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #site-wrapper.ready {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    /* Top Global Announcement Bar */
+    .top-bar {
+      background: linear-gradient(90deg, #0f172a, #1e1b4b, #0f172a);
+      border-bottom: 1px solid var(--border-color);
+      padding: 9px 24px;
+      font-size: 12.5px;
+      text-align: center;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+    }
+    .top-bar span.highlight {
+      color: var(--primary-gold);
+      font-weight: 700;
+    }
+    .top-bar-badge {
+      background: rgba(251, 191, 36, 0.2);
+      color: var(--primary-gold);
+      border: 1px solid rgba(251, 191, 36, 0.5);
+      padding: 2px 10px;
+      border-radius: 99px;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+    }
+
+    /* Glass Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 48px;
+      backdrop-filter: blur(24px);
+      background: rgba(3, 7, 18, 0.88);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .brand-link {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      text-decoration: none;
+      color: #fff;
+    }
+
+    .brand-logo-icon {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, #38bdf8, #3b82f6);
+      color: #000;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      font-size: 16px;
+      letter-spacing: -0.05em;
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .brand-title {
+      font-size: 19px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .brand-sub {
+      font-size: 11px;
+      color: var(--primary-cyan);
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+    }
+
+    /* Navigation Links */
+    nav {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+    }
+
+    .nav-item {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.25s ease;
+      cursor: pointer;
+      position: relative;
+      padding: 6px 0;
+    }
+
+    .nav-item:hover, .nav-item.active {
+      color: #ffffff;
+    }
+
+    .nav-item.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--primary-cyan);
+      border-radius: 2px;
+      box-shadow: 0 0 10px var(--primary-cyan);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .icon-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border-color);
+      color: #fff;
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+    .icon-btn:hover {
+      background: rgba(255, 255, 255, 0.14);
+      border-color: var(--primary-cyan);
+      color: var(--primary-cyan);
+    }
+
+    .nav-btn-primary {
+      background: linear-gradient(135deg, #38bdf8, #2563eb);
+      color: #ffffff;
+      padding: 10px 22px;
+      border-radius: 99px;
+      font-weight: 700;
+      font-size: 13.5px;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(56, 189, 248, 0.35);
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .nav-btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(56, 189, 248, 0.55);
+    }
+
+    /* Secondary View Switcher Bar */
+    .view-switcher-bar {
+      background: rgba(11, 15, 25, 0.95);
+      border-bottom: 1px solid var(--border-color);
+      padding: 12px 48px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+
+    .switcher-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-right: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+    }
+
+    .switcher-tab {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 8px 18px;
+      border-radius: 99px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .switcher-tab:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .switcher-tab.active {
+      background: rgba(56, 189, 248, 0.18);
+      color: var(--primary-cyan);
+      border-color: var(--primary-cyan);
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.25);
+    }
+
+    /* Views Container */
+    .view-container {
+      display: none;
+      animation: fadeInView 0.5s var(--transition);
+      flex: 1;
+    }
+
+    .view-container.active-view {
+      display: block;
+    }
+
+    @keyframes fadeInView {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* =========================================================
+       VIEW 1: OVERVIEW LANDING PAGE
+    ========================================================= */
+    .hero-section {
+      padding: 80px 48px 60px;
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 48px;
+      align-items: center;
+    }
+
+    .eyebrow-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 16px;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      border-radius: 99px;
+      font-size: 12px;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--primary-cyan);
+      margin-bottom: 24px;
+      font-weight: 600;
+    }
+
+    .hero-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: clamp(2.8rem, 5vw, 4.8rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.08;
+      margin-bottom: 24px;
+      color: #ffffff;
+    }
+
+    .hero-title span {
+      background: linear-gradient(135deg, #38bdf8 0%, #fbbf24 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-lead {
+      font-size: 1.15rem;
+      line-height: 1.65;
+      color: var(--text-muted);
+      margin-bottom: 36px;
+      max-width: 620px;
+    }
+
+    .hero-cta-group {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .btn-solid-lg {
+      background: linear-gradient(135deg, #38bdf8, #2563eb);
+      color: #ffffff;
+      padding: 16px 36px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 700;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 8px 25px rgba(56, 189, 248, 0.4);
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-solid-lg:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 14px 35px rgba(56, 189, 248, 0.6);
+    }
+
+    .btn-outline-lg {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: #ffffff;
+      padding: 16px 32px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-outline-lg:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: var(--primary-cyan);
+      color: var(--primary-cyan);
+    }
+
+    /* INDIA NETWORK & IIT BOMBAY CONNECTIONS MAP CARD */
+    .india-network-card {
+      background: var(--surface-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), 0 0 30px rgba(56, 189, 248, 0.15);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .network-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .network-card-title {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: #ffffff;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .india-map-container {
+      width: 100%;
+      height: 290px;
+      position: relative;
+      background: radial-gradient(circle at 50% 50%, rgba(15, 23, 42, 0.9), #020617);
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+    }
+
+    #india-map-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .network-card-footer {
+      margin-top: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Metrics Section */
+    .metrics-bar {
+      border-top: 1px solid var(--border-color);
+      border-bottom: 1px solid var(--border-color);
+      background: rgba(11, 15, 25, 0.7);
+      margin: 40px 0 80px;
+      padding: 48px;
+    }
+
+    .metrics-grid {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 32px;
+    }
+
+    .metric-item {
+      text-align: left;
+    }
+
+    .metric-number {
+      font-size: 38px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: #ffffff;
+      font-family: 'Outfit', sans-serif;
+      background: linear-gradient(135deg, #ffffff, #93c5fd);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .metric-label {
+      font-size: 13px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-top: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+    }
+
+    /* Featured Cards Grid */
+    .section-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 48px 100px;
+      width: 100%;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 44px;
+    }
+
+    .section-subtitle {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--primary-cyan);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    .section-main-title {
+      font-size: 36px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: #ffffff;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .landing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 28px;
+    }
+
+    .landing-card {
+      background: var(--surface-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 36px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 340px;
+      position: relative;
+      transition: all 0.35s var(--transition);
+      cursor: pointer;
+      backdrop-filter: blur(16px);
+      overflow: hidden;
+      transform-style: preserve-3d;
+      perspective: 1000px;
+    }
+
+    .landing-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(56, 189, 248, 0.15), transparent 40%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .landing-card:hover::before {
+      opacity: 1;
+    }
+
+    .landing-card:hover {
+      border-color: var(--primary-cyan);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(56, 189, 248, 0.25);
+    }
+
+    .card-category-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border-color);
+      border-radius: 99px;
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--primary-cyan);
+      margin-bottom: 24px;
+      width: fit-content;
+      font-weight: 600;
+    }
+
+    .card-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 14px;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .card-description {
+      font-size: 14.5px;
+      line-height: 1.65;
+      color: var(--text-muted);
+      margin-bottom: 32px;
+    }
+
+    .card-footer-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--primary-cyan);
+      text-decoration: none;
+      transition: gap 0.25s ease;
+    }
+
+    .landing-card:hover .card-footer-link {
+      gap: 16px;
+      color: #ffffff;
+    }
+
+    /* =========================================================
+       VIEW 2: ACCOMMODATION LANDING PAGE
+    ========================================================= */
+    .page-hero-banner {
+      background: linear-gradient(180deg, rgba(30, 58, 138, 0.3) 0%, rgba(3, 7, 18, 0) 100%);
+      padding: 60px 48px 40px;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 48px;
+    }
+
+    .banner-content {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .banner-title {
+      font-size: 40px;
+      font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 12px;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .banner-lead {
+      font-size: 16px;
+      color: var(--text-muted);
+      max-width: 750px;
+    }
+
+    /* Tariff Cards Grid */
+    .tariff-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 28px;
+      margin-bottom: 60px;
+    }
+
+    .tariff-card {
+      background: var(--surface-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 36px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .tariff-card.featured {
+      border-color: var(--primary-gold);
+      box-shadow: 0 0 30px rgba(251, 191, 36, 0.2);
+    }
+
+    .tariff-badge {
+      position: absolute;
+      top: -14px;
+      right: 28px;
+      background: var(--primary-gold);
+      color: #000;
+      padding: 4px 14px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .tariff-price {
+      font-size: 42px;
+      font-weight: 800;
+      color: #ffffff;
+      font-family: 'Outfit', sans-serif;
+      margin: 16px 0 6px;
+    }
+    .tariff-price span {
+      font-size: 15px;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .tariff-features-list {
+      list-style: none;
+      margin: 24px 0 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .tariff-features-list li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+    .tariff-features-list li::before {
+      content: '✓';
+      color: var(--primary-emerald);
+      font-weight: 800;
+    }
+
+    /* Accordion FAQ */
+    .faq-container {
+      margin-top: 60px;
+    }
+
+    .faq-item {
+      background: var(--surface-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      margin-bottom: 14px;
+      overflow: hidden;
+    }
+
+    .faq-question {
+      padding: 20px 24px;
+      font-weight: 700;
+      font-size: 16px;
+      color: #ffffff;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: background 0.2s ease;
+    }
+
+    .faq-question:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .faq-answer {
+      padding: 0 24px 20px;
+      color: var(--text-muted);
+      font-size: 14.5px;
+      line-height: 1.6;
+      display: none;
+    }
+
+    .faq-item.open .faq-answer {
+      display: block;
+    }
+    .faq-item.open .faq-toggle-icon {
+      transform: rotate(45deg);
+    }
+
+    /* =========================================================
+       VIEW 3: WORKSHOPS LANDING PAGE
+    ========================================================= */
+    .filter-bar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 36px;
+      flex-wrap: wrap;
+    }
+
+    .filter-chip {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 8px 20px;
+      border-radius: 99px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+
+    .filter-chip.active, .filter-chip:hover {
+      background: rgba(56, 189, 248, 0.18);
+      color: var(--primary-cyan);
+      border-color: var(--primary-cyan);
+    }
+
+    .workshops-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 28px;
+    }
+
+    .workshop-card {
+      background: var(--surface-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.3s ease;
+    }
+
+    .workshop-card:hover {
+      border-color: var(--primary-cyan);
+    }
+
+    .workshop-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+
+    .seat-badge {
+      background: rgba(239, 68, 68, 0.18);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      padding: 4px 10px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .workshop-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 12px;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .workshop-details {
+      display: flex;
+      gap: 16px;
+      margin: 18px 0;
+      font-size: 12.5px;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* =========================================================
+       VIEW 4: ROBOWARS & COMPETITIONS LANDING PAGE
+    ========================================================= */
+    .robowars-spotlight {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(15, 23, 42, 0.9));
+      border: 1px solid rgba(239, 68, 68, 0.45);
+      border-radius: var(--radius-lg);
+      padding: 48px;
+      margin-bottom: 60px;
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 36px;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .robowars-spotlight::before {
+      content: 'ROBOWARS';
+      position: absolute;
+      right: -20px;
+      bottom: -40px;
+      font-size: 140px;
+      font-weight: 900;
+      color: rgba(239, 68, 68, 0.04);
+      font-family: 'Outfit', sans-serif;
+      pointer-events: none;
+    }
+
+    .robowars-title {
+      font-size: 44px;
+      font-weight: 900;
+      color: #ffffff;
+      font-family: 'Outfit', sans-serif;
+      margin-bottom: 16px;
+    }
+
+    .arena-specs-box {
+      background: rgba(3, 7, 18, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+    }
+
+    .arena-spec-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .arena-spec-row:last-child { border: none; }
+
+    /* Competitions Search & Grid */
+    .search-input-wrap {
+      position: relative;
+      margin-bottom: 32px;
+      max-width: 500px;
+    }
+
+    .search-input {
+      width: 100%;
+      background: var(--surface-card);
+      border: 1px solid var(--border-color);
+      padding: 14px 20px 14px 48px;
+      border-radius: 12px;
+      color: #fff;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.25s ease;
+    }
+    .search-input:focus {
+      border-color: var(--primary-cyan);
+    }
+
+    .search-icon-inside {
+      position: absolute;
+      left: 18px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+    }
+
+    /* =========================================================
+       VIEW 5: IGNITE NATIONAL INITIATIVE LANDING PAGE
+    ========================================================= */
+    .ignite-hero {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(15, 23, 42, 0.9));
+      border: 1px solid rgba(245, 158, 11, 0.45);
+      border-radius: var(--radius-lg);
+      padding: 56px;
+      margin-bottom: 60px;
+      text-align: center;
+    }
+
+    .ignite-logo-text {
+      font-family: 'Cinzel Decorative', serif;
+      font-size: 52px;
+      font-weight: 900;
+      color: var(--primary-gold);
+      letter-spacing: 0.1em;
+      margin-bottom: 16px;
+    }
+
+    .ignite-tracks-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 28px;
+    }
+
+    .ignite-track-card {
+      background: var(--surface-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 36px;
+    }
+
+    /* =========================================================
+       VIEW 6: KEYNOTES & EXHIBITIONS
+    ========================================================= */
+    .speakers-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 28px;
+    }
+
+    .speaker-card {
+      background: var(--surface-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      text-align: center;
+      transition: transform 0.3s ease;
+    }
+
+    .speaker-card:hover {
+      border-color: var(--primary-cyan);
+    }
+
+    .speaker-avatar {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #38bdf8, #fbbf24);
+      margin: 0 auto 20px;
+      display: grid;
+      place-items: center;
+      font-size: 36px;
+      color: #000;
+      font-weight: 800;
+    }
+
+    .speaker-name {
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+
+    .speaker-title {
+      font-size: 13px;
+      color: var(--primary-cyan);
+      margin-bottom: 14px;
+    }
+
+    /* =========================================================
+       FOOTER & CREDITS HUB
+    ========================================================= */
+    footer {
+      background: #020617;
+      border-top: 1px solid var(--border-color);
+      padding: 60px 48px 36px;
+      margin-top: auto;
+      position: relative;
+      z-index: 10;
+    }
+
+    .footer-grid {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1.5fr 1fr 1fr 1.2fr;
+      gap: 48px;
+      margin-bottom: 48px;
+    }
+
+    .footer-brand-desc {
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--text-muted);
+      margin-top: 16px;
+    }
+
+    .footer-col-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 20px;
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .footer-links {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .footer-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 13.5px;
+      transition: color 0.2s ease;
+      cursor: pointer;
+    }
+    .footer-links a:hover {
+      color: var(--primary-cyan);
+    }
+
+    /* Social Media Icons Grid */
+    .social-icons-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .social-icon-btn {
+      width: 44px;
+      height: 44px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: all 0.25s ease;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .social-icon-btn:hover {
+      background: var(--primary-cyan);
+      color: #000;
+      border-color: var(--primary-cyan);
+      box-shadow: 0 8px 20px rgba(56, 189, 248, 0.4);
+    }
+
+    /* Location Card in Footer */
+    .location-card {
+      background: var(--surface-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      font-size: 12.5px;
+    }
+
+    .location-card-title {
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .location-card-address {
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 12px;
+    }
+
+    .maps-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--primary-cyan);
+      font-weight: 700;
+      text-decoration: none;
+      font-size: 12px;
+    }
+    .maps-btn:hover {
+      text-decoration: underline;
+    }
+
+    .footer-bottom {
+      max-width: 1400px;
+      margin: 0 auto;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      align-items: center;
+      text-align: center;
+      font-size: 13.5px;
+      color: var(--text-muted);
+    }
+
+    .footer-credits-main {
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: 0.03em;
+      font-size: 14px;
+    }
+
+    .footer-credits-sub {
+      color: var(--primary-gold);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .replay-intro-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 8px 18px;
+      border-radius: 99px;
+      cursor: pointer;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      transition: all 0.25s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .replay-intro-btn:hover {
+      background: var(--primary-cyan);
+      color: #000;
+      border-color: var(--primary-cyan);
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
+    }
+
+    /* Sound FX Toggle Button */
+    .sound-toggle-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border-color);
+      color: var(--primary-cyan);
+      padding: 6px 14px;
+      border-radius: 99px;
+      cursor: pointer;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.25s ease;
+    }
+    .sound-toggle-btn:hover {
+      background: rgba(56, 189, 248, 0.18);
+      border-color: var(--primary-cyan);
+    }
+
+    /* =========================================================
+       MODAL DIALOG ENGINE
+    ========================================================= */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 999999;
+      background: rgba(2, 6, 23, 0.88);
+      backdrop-filter: blur(16px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    .modal-overlay.open {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal-card {
+      background: #0b0f19;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      max-width: 650px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 36px;
+      position: relative;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9), 0 0 40px rgba(56, 189, 248, 0.2);
+      transform: scale(0.95);
+      transition: transform 0.3s var(--transition);
+    }
+
+    .modal-overlay.open .modal-card {
+      transform: scale(1);
+    }
+
+    .modal-close-btn {
+      position: absolute;
+      top: 24px;
+      right: 24px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      font-size: 18px;
+      transition: all 0.2s ease;
+    }
+    .modal-close-btn:hover {
+      background: #ef4444;
+      color: #fff;
+      border-color: #ef4444;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-main);
+      margin-bottom: 8px;
+    }
+
+    .form-input, .form-select, .form-textarea {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+      padding: 12px 16px;
+      border-radius: 10px;
+      color: #fff;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.25s ease;
+    }
+
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      border-color: var(--primary-cyan);
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+    }
+
+    .form-submit-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #38bdf8, #2563eb);
+      color: #fff;
+      padding: 14px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      margin-top: 10px;
+      box-shadow: 0 4px 20px rgba(56, 189, 248, 0.35);
+      transition: transform 0.2s ease;
+    }
+
+    /* Toast Notifications */
+    #toast-container {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      z-index: 9999999;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .toast-msg {
+      background: #0f172a;
+      border: 1px solid var(--primary-cyan);
+      color: #fff;
+      padding: 14px 20px;
+      border-radius: 12px;
+      font-size: 13.5px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 20px rgba(56, 189, 248, 0.25);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      animation: toastIn 0.3s ease;
+    }
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateX(30px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    @media (max-width: 1024px) {
+      .hero-section { grid-template-columns: 1fr; }
+      .robowars-spotlight { grid-template-columns: 1fr; }
+      .footer-grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (max-width: 768px) {
+      header { padding: 14px 20px; }
+      nav { display: none; }
+      .view-switcher-bar { padding: 10px 20px; }
+      .hero-section { padding: 40px 20px; }
+      .section-container { padding: 0 20px 60px; }
+      .footer-grid { grid-template-columns: 1fr; }
+      footer { padding: 40px 20px; }
+      .mesmerizing-title { font-size: 1.6rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Dynamic Constellation Network Canvas Background -->
+  <canvas id="global-bg-canvas"></canvas>
+
+  <!-- Custom Glowing Futuristic Cursor -->
+  <div id="cyber-cursor"></div>
+  <div id="cyber-cursor-trail"></div>
+
+  <!-- =========================================================
+       CINEMATIC 3D REAL EARTH & UNIVERSE INTRO SCREEN
+  ========================================================= -->
+  <div id="intro-screen">
+    <div id="three-canvas-container"></div>
+    <div id="blast-flash-overlay"></div>
+
+    <div class="intro-hud-top">
+      <div class="status-badge">
+        <span class="status-dot"></span>
+        <span>TF_26 // DEEP SPACE ORBITAL TELEMETRY</span>
+      </div>
+      <button class="skip-btn" id="skip-btn">SKIP INTRO [ESC]</button>
+    </div>
+
+    <!-- Mesmerizing Title Text Overlay -->
+    <div id="intro-center-layer">
+      <h1 class="mesmerizing-title" id="mesmerizing-text">Welcome to <span class="intro-text-gold">Techfest</span> of <span class="intro-text-cyan">IIT Bombay</span></h1>
+      <p class="mesmerizing-sub" id="mesmerizing-sub">Asia's Largest Science & Technological Festival • <span class="sub-gold">18th December 2026</span></p>
+    </div>
+
+    <!-- Targeted Crosshair HUD on IIT Bombay -->
+    <div id="target-hud">
+      <div class="crosshair-reticle"></div>
+      <div class="beacon-data-card">
+        <div class="beacon-title">IIT BOMBAY</div>
+        <div class="beacon-address">Main Gate Road, Powai, Mumbai, Maharashtra 400076, India</div>
+        <div class="beacon-address">COORDINATES: LAT 19.1334° N | LONG 72.9133° E</div>
+        <div class="beacon-status">
+          <span>●</span> TARGET LOCKED // INITIATING JUMP
+        </div>
+      </div>
+    </div>
+
+    <div class="intro-hud-bottom">
+      <div>
+        <span>ORBITAL TRACKING: 4 ACTIVE CONSTELLATIONS</span>
+        <div class="timeline-track">
+          <div class="timeline-fill" id="timeline-fill"></div>
+        </div>
+      </div>
+      <div>POWAI VECTOR // 18TH DECEMBER 2026</div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       MAIN SITE WRAPPER
+  ========================================================= -->
+  <div id="site-wrapper">
+    
+    <!-- Top Announcement Bar -->
+    <div class="top-bar">
+      <span class="top-bar-badge">OFFICIAL</span>
+      <span>Techfest '26 Registrations are now OPEN!</span>
+      <span>•</span>
+      <span class="highlight">Grand Date: 18th of December 2026</span>
+    </div>
+
+    <!-- Glass Header -->
+    <header>
+      <a href="#" class="brand-link" onclick="switchView('overview')">
+        <div class="brand-logo-icon">TF</div>
+        <div>
+          <div class="brand-title">TECHFEST '26</div>
+          <div class="brand-sub">IIT BOMBAY • 18TH DEC 2026</div>
+        </div>
+      </a>
+
+      <nav>
+        <a class="nav-item active" id="nav-overview" onclick="switchView('overview')">Overview</a>
+        <a class="nav-item" id="nav-accommodation" onclick="switchView('accommodation')">Accommodation</a>
+        <a class="nav-item" id="nav-workshops" onclick="switchView('workshops')">Workshops</a>
+        <a class="nav-item" id="nav-robowars" onclick="switchView('robowars')">Robowars & Competitions</a>
+        <a class="nav-item" id="nav-ignite" onclick="switchView('ignite')">Ignite</a>
+        <a class="nav-item" id="nav-keynotes" onclick="switchView('keynotes')">Keynotes</a>
+      </nav>
+
+      <div class="header-actions">
+        <button class="sound-toggle-btn" id="sound-btn" onclick="toggleSound()">
+          <span>🔊 Sound ON</span>
+        </button>
+        <button class="icon-btn" onclick="openSearchModal()" title="Search Portal (Ctrl+K)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        </button>
+        <button class="nav-btn-primary" onclick="openRegistrationModal('General Registration')">
+          <span>Register Now</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Dedicated View Switcher Bar -->
+    <div class="view-switcher-bar">
+      <span class="switcher-label">// LANDING PAGES:</span>
+      <button class="switcher-tab active" id="tab-overview" onclick="switchView('overview')">
+        <span>🏠 Overview</span>
+      </button>
+      <button class="switcher-tab" id="tab-accommodation" onclick="switchView('accommodation')">
+        <span>🏨 Accommodation</span>
+      </button>
+      <button class="switcher-tab" id="tab-workshops" onclick="switchView('workshops')">
+        <span>🛠️ Workshops</span>
+      </button>
+      <button class="switcher-tab" id="tab-robowars" onclick="switchView('robowars')">
+        <span>🤖 Robowars & Competitions</span>
+      </button>
+      <button class="switcher-tab" id="tab-ignite" onclick="switchView('ignite')">
+        <span>🚀 Ignite Network</span>
+      </button>
+      <button class="switcher-tab" id="tab-keynotes" onclick="switchView('keynotes')">
+        <span>🎤 Keynote Speakers</span>
+      </button>
+    </div>
+
+    <!-- =========================================================
+         VIEW 1: OVERVIEW LANDING PAGE
+    ========================================================= -->
+    <div class="view-container active-view" id="view-overview">
+      <section class="hero-section">
+        <div>
+          <div class="eyebrow-badge">
+            <span class="status-dot"></span>
+            <span>IIT BOMBAY • 18TH DECEMBER 2026</span>
+          </div>
+          <h1 class="hero-title">
+            The Epicenter of Human Engineering & <span>Infinite Innovation.</span>
+          </h1>
+          <p class="hero-lead">
+            Welcome to Asia's Largest Science and Technological Festival. Over 175,000+ researchers, engineers, and tech visionaries gather at Powai on 18th December 2026 to build the future of AI, robotics, aerospace, and quantum technology.
+          </p>
+          <div class="hero-cta-group">
+            <button class="btn-solid-lg" onclick="switchView('robowars')">
+              <span>Explore Competitions</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            </button>
+            <button class="btn-outline-lg" onclick="switchView('accommodation')">
+              <span>Book Campus Stay</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- INDIA NETWORK & IIT BOMBAY CONNECTIONS MAP CARD -->
+        <div class="india-network-card">
+          <div class="network-card-header">
+            <div class="network-card-title">INDIA NATIONAL NETWORK CONNECTIONS</div>
+            <span class="top-bar-badge">LIVE MAP</span>
+          </div>
+          <div class="india-map-container">
+            <canvas id="india-map-canvas"></canvas>
+          </div>
+          <div class="network-card-footer">
+            <div>HUB: IIT BOMBAY (MUMBAI)</div>
+            <div style="color: var(--primary-cyan);">15+ NATIONAL ZONAL NODES</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Key Metrics -->
+      <section class="metrics-bar">
+        <div class="metrics-grid">
+          <div class="metric-item">
+            <div class="metric-number">175K+</div>
+            <div class="metric-label">Footfall Attendance</div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-number">2,500+</div>
+            <div class="metric-label">Universities Represented</div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-number">₹45L+</div>
+            <div class="metric-label">Total Prize Pool</div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-number">65+</div>
+            <div class="metric-label">Participating Nations</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Featured Pillars Grid -->
+      <section class="section-container">
+        <div class="section-header">
+          <div>
+            <div class="section-subtitle">// FESTIVAL DIVISIONS</div>
+            <h2 class="section-main-title">Core Pillars of Techfest</h2>
+          </div>
+        </div>
+
+        <div class="landing-grid">
+          <div class="landing-card" onclick="switchView('robowars')">
+            <div>
+              <div class="card-category-badge">01 / FLAGSHIP COMBAT</div>
+              <h3 class="card-title">International Robowars</h3>
+              <p class="card-description">High-octane 60kg & 15kg combat robotics inside bulletproof steel arenas featuring top international fighting squads.</p>
+            </div>
+            <div class="card-footer-link">Enter Robowars Arena <span>→</span></div>
+          </div>
+
+          <div class="landing-card" onclick="switchView('workshops')">
+            <div>
+              <div class="card-category-badge">02 / HANDS-ON LEARNING</div>
+              <h3 class="card-title">Certified Workshops</h3>
+              <p class="card-description">Master GenAI, Humanoid Robotics, Quantum Computing & Cybersecurity led by industry pioneers with official IIT Bombay certification.</p>
+            </div>
+            <div class="card-footer-link">Browse Workshops <span>→</span></div>
+          </div>
+
+          <div class="landing-card" onclick="switchView('accommodation')">
+            <div>
+              <div class="card-category-badge">03 / CAMPUS LIVING</div>
+              <h3 class="card-title">IIT Powai Accommodation</h3>
+              <p class="card-description">Experience 3 days of living inside the iconic 550-acre IIT Bombay Powai campus with full hostel facilities and mess access.</p>
+            </div>
+            <div class="card-footer-link">Book Campus Pass <span>→</span></div>
+          </div>
+
+          <div class="landing-card" onclick="switchView('ignite')">
+            <div>
+              <div class="card-category-badge">04 / NATIONAL NETWORK</div>
+              <h3 class="card-title">Ignite Initiative</h3>
+              <p class="card-description">Empowering student tech clubs across India with accreditation, R&D incubation support, and direct Techfest entry tracks.</p>
+            </div>
+            <div class="card-footer-link">Join Ignite Club Network <span>→</span></div>
+          </div>
+
+          <div class="landing-card" onclick="switchView('keynotes')">
+            <div>
+              <div class="card-category-badge">05 / GLOBAL THOUGHTS</div>
+              <h3 class="card-title">World Keynotes</h3>
+              <p class="card-description">Keynote addresses by Nobel Laureates, NASA Astronauts, and pioneer AI architects shaping the future of humanity.</p>
+            </div>
+            <div class="card-footer-link">View Speakers <span>→</span></div>
+          </div>
+
+          <div class="landing-card" onclick="switchView('robowars')">
+            <div>
+              <div class="card-category-badge">06 / AEROSPACE</div>
+              <h3 class="card-title">Boeing Aeromodelling</h3>
+              <p class="card-description">Micro-UAV design, autonomous flight path navigation, and precision payload drops validated by global aerospace leaders.</p>
+            </div>
+            <div class="card-footer-link">View Flight Missions <span>→</span></div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- =========================================================
+         VIEW 2: ACCOMMODATION LANDING PAGE
+    ========================================================= -->
+    <div class="view-container" id="view-accommodation">
+      <div class="page-hero-banner">
+        <div class="banner-content">
+          <div class="eyebrow-badge">CAMPUS LIVING // 18TH DECEMBER 2026</div>
+          <h1 class="banner-title">Stay at IIT Bombay Campus</h1>
+          <p class="banner-lead">
+            Immerse yourself in the vibrant academic culture of IIT Bombay from 18th December 2026. Secure your on-campus hostel stay for 3 days of Techfest with food coupons, high-speed WiFi, and 24/7 campus access.
+          </p>
+        </div>
+      </div>
+
+      <div class="section-container">
+        <h2 class="section-main-title" style="margin-bottom: 32px;">Hostel Tariff & Accommodation Passes</h2>
+        
+        <div class="tariff-grid">
+          <div class="tariff-card">
+            <div>
+              <span class="card-category-badge">BOYS HOSTEL PASS</span>
+              <h3 class="card-title">Individual Male Stay</h3>
+              <div class="tariff-price">₹499 <span>/ day</span></div>
+              <p style="color: var(--text-muted); font-size: 13.5px;">Hostels 12, 13 & 14 (Powai Campus)</p>
+              <ul class="tariff-features-list">
+                <li>Hostel Bed & Clean Bedding</li>
+                <li>Mess Breakfast & Dinner Coupons</li>
+                <li>24/7 Campus High-Speed WiFi</li>
+                <li>Techfest Official Delegate Badge</li>
+                <li>24/7 Security & Medical Center Access</li>
+              </ul>
+            </div>
+            <button class="form-submit-btn" onclick="openBookingModal('Individual Male Stay', 499)">Book Male Stay</button>
+          </div>
+
+          <div class="tariff-card featured">
+            <span class="tariff-badge">POPULAR</span>
+            <div>
+              <span class="card-category-badge">GIRLS HOSTEL PASS</span>
+              <h3 class="card-title">Individual Female Stay</h3>
+              <div class="tariff-price">₹499 <span>/ day</span></div>
+              <p style="color: var(--text-muted); font-size: 13.5px;">Hostels 15 & 16 (Powai Campus)</p>
+              <ul class="tariff-features-list">
+                <li>Dedicated Female Security Wing</li>
+                <li>Hostel Bed & Clean Bedding</li>
+                <li>Mess Breakfast & Dinner Coupons</li>
+                <li>24/7 High-Speed Campus WiFi</li>
+                <li>Techfest Official Delegate Badge</li>
+              </ul>
+            </div>
+            <button class="form-submit-btn" onclick="openBookingModal('Individual Female Stay', 499)">Book Female Stay</button>
+          </div>
+
+          <div class="tariff-card">
+            <div>
+              <span class="card-category-badge">TEAM COMBO PASS</span>
+              <h3 class="card-title">Squad Suite (Up to 5)</h3>
+              <div class="tariff-price">₹2,199 <span>/ day</span></div>
+              <p style="color: var(--text-muted); font-size: 13.5px;">Combined Hostel Wing Block</p>
+              <ul class="tariff-features-list">
+                <li>5 Beds in Adjacent Hostel Rooms</li>
+                <li>Priority Check-in Counter</li>
+                <li>5x Mess Food Coupons</li>
+                <li>Team Equipment Storage Locker</li>
+                <li>Express Entry to Robowars Arena</li>
+              </ul>
+            </div>
+            <button class="form-submit-btn" onclick="openBookingModal('Team Squad Suite', 2199)">Book Team Suite</button>
+          </div>
+        </div>
+
+        <div class="faq-container">
+          <h2 class="section-main-title" style="margin-bottom: 24px;">Accommodation FAQs</h2>
+          
+          <div class="faq-item" onclick="toggleFaq(this)">
+            <div class="faq-question">
+              <span>What documents are required during check-in?</span>
+              <span class="faq-toggle-icon">+</span>
+            </div>
+            <div class="faq-answer">
+              You must present your Original College Student ID card along with a valid Government Photo ID (Aadhaar Card / Passport / Driving License) and your Techfest Accommodation Booking Confirmation QR.
+            </div>
+          </div>
+
+          <div class="faq-item" onclick="toggleFaq(this)">
+            <div class="faq-question">
+              <span>What are the check-in and check-out timings?</span>
+              <span class="faq-toggle-icon">+</span>
+            </div>
+            <div class="faq-answer">
+              Check-in opens at 06:00 AM on 18th December 2026. Standard daily check-out time is 10:00 PM on your final booked day. 24/7 helpdesk is available at Main Gate entrance.
+            </div>
+          </div>
+
+          <div class="faq-item" onclick="toggleFaq(this)">
+            <div class="faq-question">
+              <span>Are food coupons included in the stay?</span>
+              <span class="faq-toggle-icon">+</span>
+            </div>
+            <div class="faq-answer">
+              Yes! Every accommodation pass includes complimentary daily breakfast and dinner coupons redeemable at the IIT Bombay Student Hostels Mess.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- =========================================================
+         VIEW 3: WORKSHOPS LANDING PAGE
+    ========================================================= -->
+    <div class="view-container" id="view-workshops">
+      <div class="page-hero-banner">
+        <div class="banner-content">
+          <div class="eyebrow-badge">LEARNING // 18TH DECEMBER 2026</div>
+          <h1 class="banner-title">Hands-on Technical Workshops</h1>
+          <p class="banner-lead">
+            Gain industry-grade technical skills directly from master engineers and researchers. All workshops include hands-on hardware/software kits and an official Certificate of Excellence from Techfest IIT Bombay.
+          </p>
+        </div>
+      </div>
+
+      <div class="section-container">
+        <div class="filter-bar">
+          <button class="filter-chip active" onclick="filterWorkshops('all', this)">All Workshops</button>
+          <button class="filter-chip" onclick="filterWorkshops('ai', this)">AI & Machine Learning</button>
+          <button class="filter-chip" onclick="filterWorkshops('robotics', this)">Robotics & Drones</button>
+          <button class="filter-chip" onclick="filterWorkshops('cyber', this)">Cybersecurity</button>
+          <button class="filter-chip" onclick="filterWorkshops('quantum', this)">Quantum & IoT</button>
+        </div>
+
+        <div class="workshops-grid">
+          <div class="workshop-card" data-cat="ai">
+            <div>
+              <div class="workshop-meta">
+                <span class="card-category-badge">AI & ML</span>
+                <span class="seat-badge">ONLY 8 SEATS LEFT</span>
+              </div>
+              <h3 class="workshop-title">Generative AI & LLM Architecture</h3>
+              <p class="card-description">Build autonomous AI agents, fine-tune open-weight Llama 3 models, and deploy RAG pipelines using PyTorch and LangChain.</p>
+              <div class="workshop-details">
+                <span>⏱️ Dec 18-19 (16 Hrs)</span>
+                <span>📜 IITB Certified</span>
+              </div>
+            </div>
+            <button class="form-submit-btn" onclick="openWorkshopModal('Generative AI & LLM Architecture', 1499)">Register • ₹1,499</button>
+          </div>
+
+          <div class="workshop-card" data-cat="robotics">
+            <div>
+              <div class="workshop-meta">
+                <span class="card-category-badge">ROBOTICS</span>
+                <span class="seat-badge">ONLY 14 SEATS LEFT</span>
+              </div>
+              <h3 class="workshop-title">Humanoid Robotics & ROS2</h3>
+              <p class="card-description">Program bipedal robot locomotion, inverse kinematics, LiDAR mapping, and obstacle avoidance using ROS2 and Gazebo.</p>
+              <div class="workshop-details">
+                <span>⏱️ Dec 18-19 (16 Hrs)</span>
+                <span>📜 Hardware Kit Provided</span>
+              </div>
+            </div>
+            <button class="form-submit-btn" onclick="openWorkshopModal('Humanoid Robotics & ROS2', 1799)">Register • ₹1,799</button>
+          </div>
+
+          <div class="workshop-card" data-cat="cyber">
+            <div>
+              <div class="workshop-meta">
+                <span class="card-category-badge">CYBERSECURITY</span>
+                <span class="seat-badge">FILLING FAST</span>
+              </div>
+              <h3 class="workshop-title">Ethical Hacking & Cloud Security</h3>
+              <p class="card-description">Hands-on penetration testing, web application exploit analysis, zero-trust network defense, and bug bounty methodologies.</p>
+              <div class="workshop-details">
+                <span>⏱️ Dec 19-20 (16 Hrs)</span>
+                <span>📜 IITB Certified</span>
+              </div>
+            </div>
+            <button class="form-submit-btn" onclick="openWorkshopModal('Ethical Hacking & Cloud Security', 1399)">Register • ₹1,399</button>
+          </div>
+
+          <div class="workshop-card" data-cat="robotics">
+            <div>
+              <div class="workshop-meta">
+                <span class="card-category-badge">AEROSPACE</span>
+                <span class="seat-badge">ONLY 5 SEATS LEFT</span>
+              </div>
+              <h3 class="workshop-title">Autonomous Drones & Swarms</h3>
+              <p class="card-description">Assemble custom quadcopters, configure PX4 flight controllers, and program autonomous formation flying algorithms.</p>
+              <div class="workshop-details">
+                <span>⏱️ Dec 19-20 (16 Hrs)</span>
+                <span>📜 Flight Kit Included</span>
+              </div>
+            </div>
+            <button class="form-submit-btn" onclick="openWorkshopModal('Autonomous Drones & Swarms', 1999)">Register • ₹1,999</button>
+          </div>
+
+          <div class="workshop-card" data-cat="quantum">
+            <div>
+              <div class="workshop-meta">
+                <span class="card-category-badge">QUANTUM</span>
+                <span class="seat-badge">LIMITED SLOTS</span>
+              </div>
+              <h3 class="workshop-title">Quantum Computing with IBM Qiskit</h3>
+              <p class="card-description">Formulate quantum circuits, execute Shor's & Grover's algorithms, and run code directly on IBM's real Quantum Computers.</p>
+              <div class="workshop-details">
+                <span>⏱️ Dec 18-19 (16 Hrs)</span>
+                <span>📜 IBM Cloud Access</span>
+              </div>
+            </div>
+            <button class="form-submit-btn" onclick="openWorkshopModal('Quantum Computing with Qiskit', 1599)">Register • ₹1,599</button>
+          </div>
+
+          <div class="workshop-card" data-cat="quantum">
+            <div>
+              <div class="workshop-meta">
+                <span class="card-category-badge">IOT & EDGE AI</span>
+                <span class="seat-badge">ONLY 10 SEATS LEFT</span>
+              </div>
+              <h3 class="workshop-title">TinyML & Edge AI Systems</h3>
+              <p class="card-description">Deploy neural networks onto microcontrollers (ESP32 / Raspberry Pi Pico) for real-time camera computer vision.</p>
+              <div class="workshop-details">
+                <span>⏱️ Dec 19-20 (16 Hrs)</span>
+                <span>📜 Microcontroller Kit</span>
+              </div>
+            </div>
+            <button class="form-submit-btn" onclick="openWorkshopModal('TinyML & Edge AI Systems', 1499)">Register • ₹1,499</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- =========================================================
+         VIEW 4: ROBOWARS & COMPETITIONS LANDING PAGE
+    ========================================================= -->
+    <div class="view-container" id="view-robowars">
+      <div class="page-hero-banner">
+        <div class="banner-content">
+          <div class="eyebrow-badge">ARENA COMBAT // ₹50 LAKH PRIZE POOL</div>
+          <h1 class="banner-title">Robowars & Global Competitions</h1>
+          <p class="banner-lead">
+            The ultimate test of mechanical engineering and combat tactics on 18th December 2026. Witness reinforced steel bots battle in bulletproof arenas, aeromodelling gliders, autonomous maze solvers, and algorithmic coding sprints.
+          </p>
+        </div>
+      </div>
+
+      <div class="section-container">
+        <div class="robowars-spotlight">
+          <div>
+            <span class="card-category-badge" style="border-color: #ef4444; color: #ef4444;">FLAGSHIP COMBAT</span>
+            <h2 class="robowars-title">International Robowars '26</h2>
+            <p style="color: var(--text-muted); line-height: 1.65; margin-bottom: 24px;">
+              Featuring 60kg Heavyweight and 15kg Featherweight combat robots constructed by international teams. Complete pneumatic flippers, horizontal spinners, and titanium armor plating.
+            </p>
+            <div style="display: flex; gap: 14px; flex-wrap: wrap;">
+              <button class="btn-solid-lg" style="background: linear-gradient(135deg, #ef4444, #991b1b);" onclick="openCompetitionModal('Robowars 60kg Heavyweight')">
+                <span>Register Bot Team</span>
+              </button>
+              <button class="btn-outline-lg" onclick="downloadRulebook('Robowars_Rulebook_2026.pdf')">
+                <span>Download Rulebook PDF</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="arena-specs-box">
+            <div style="font-weight: 700; color: #ef4444; margin-bottom: 12px;">ARENA TECHNICAL SPECS</div>
+            <div class="arena-spec-row">
+              <span>Arena Dimensions</span>
+              <span style="color: #fff;">30 ft x 30 ft Enclosure</span>
+            </div>
+            <div class="arena-spec-row">
+              <span>Shielding</span>
+              <span style="color: #fff;">15mm Bulletproof Polycarbonate</span>
+            </div>
+            <div class="arena-spec-row">
+              <span>Floor Hazards</span>
+              <span style="color: #fff;">Pneumatic Pit & Flame Traps</span>
+            </div>
+            <div class="arena-spec-row">
+              <span>Weight Categories</span>
+              <span style="color: #fff;">60 kg & 15 kg Combat</span>
+            </div>
+            <div class="arena-spec-row">
+              <span>Grand Prize Pool</span>
+              <span style="color: var(--primary-gold);">₹15,000,000 Total</span>
+            </div>
+          </div>
+        </div>
+
+        <h2 class="section-main-title" style="margin-bottom: 24px;">All Festival Competitions</h2>
+        <div class="search-input-wrap">
+          <span class="search-icon-inside">🔍</span>
+          <input type="text" class="search-input" id="comp-search" placeholder="Search competitions by name, tech or keyword..." onkeyup="searchCompetitions()">
+        </div>
+
+        <div class="landing-grid" id="competitions-grid">
+          <div class="landing-card comp-item" data-title="Boeing Aeromodelling Challenge">
+            <div>
+              <div class="card-category-badge">AEROSPACE</div>
+              <h3 class="card-title">Boeing Aeromodelling</h3>
+              <p class="card-description">Design, fabricate, and pilot an RC aircraft capable of carrying payload and performing precision target dropping maneuvers.</p>
+            </div>
+            <button class="form-submit-btn" onclick="openCompetitionModal('Boeing Aeromodelling Challenge')">Register Team • Prize ₹3L</button>
+          </div>
+
+          <div class="landing-card comp-item" data-title="International Coding League">
+            <div>
+              <div class="card-category-badge">ALGORITHMIC CODING</div>
+              <h3 class="card-title">International Coding League</h3>
+              <p class="card-description">High-intensity competitive programming contest testing dynamic programming, graph theory, and mathematical optimization algorithms.</p>
+            </div>
+            <button class="form-submit-btn" onclick="openCompetitionModal('International Coding League')">Register Solo/Pair • Prize ₹2.5L</button>
+          </div>
+
+          <div class="landing-card comp-item" data-title="Meshmerize Maze Solver">
+            <div>
+              <div class="card-category-badge">AUTONOMOUS ROBOTICS</div>
+              <h3 class="card-title">Meshmerize Line Follower</h3>
+              <p class="card-description">Autonomous line-following micro-robot racing through intricate maze grids with dynamic speed optimization.</p>
+            </div>
+            <button class="form-submit-btn" onclick="openCompetitionModal('Meshmerize Maze Solver')">Register Team • Prize ₹1.5L</button>
+          </div>
+
+          <div class="landing-card comp-item" data-title="Cozmo Clench Pick Place">
+            <div>
+              <div class="card-category-badge">MECHATRONICS</div>
+              <h3 class="card-title">Cozmo Clench</h3>
+              <p class="card-description">Gripper-equipped terrain navigating robot required to pick, sort, and deposit hazardous payloads across obstacle courses.</p>
+            </div>
+            <button class="form-submit-btn" onclick="openCompetitionModal('Cozmo Clench Pick Place')">Register Team • Prize ₹1.8L</button>
+          </div>
+
+          <div class="landing-card comp-item" data-title="Science Grand Prix R&D">
+            <div>
+              <div class="card-category-badge">GLOBAL RESEARCH</div>
+              <h3 class="card-title">Techfest Science Grand Prix</h3>
+              <p class="card-description">Present groundbreaking original scientific research papers and working prototypes to a panel of IIT Bombay professors & scientists.</p>
+            </div>
+            <button class="form-submit-btn" onclick="openCompetitionModal('Techfest Science Grand Prix')">Submit Paper • Prize ₹5L</button>
+          </div>
+
+          <div class="landing-card comp-item" data-title="Technorion National Qualifiers">
+            <div>
+              <div class="card-category-badge">ZONAL LEAGUE</div>
+              <h3 class="card-title">Technorion National Qualifiers</h3>
+              <p class="card-description">Regional qualifying rounds held across 15+ major cities in India leading straight to the Techfest Grand Finals at Powai.</p>
+            </div>
+            <button class="form-submit-btn" onclick="openCompetitionModal('Technorion National Qualifiers')">Find Your City Zonal</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- =========================================================
+         VIEW 5: IGNITE NATIONAL NETWORK LANDING PAGE
+    ========================================================= -->
+    <div class="view-container" id="view-ignite">
+      <div class="section-container" style="padding-top: 40px;">
+        <div class="ignite-hero">
+          <div class="ignite-logo-text">IGNITE</div>
+          <h2 style="font-size: 24px; color: #fff; margin-bottom: 12px;">Techfest National College Innovation Network</h2>
+          <p style="color: var(--text-muted); max-width: 700px; margin: 0 auto 28px; font-size: 15px;">
+            Connecting, accrediting, and funding 500+ student-led technical bodies and robotics clubs across engineering colleges in India.
+          </p>
+          <button class="btn-solid-lg" style="background: linear-gradient(135deg, #fbbf24, #d97706);" onclick="openIgniteModal()">
+            <span>Apply for Club Accreditation</span>
+          </button>
+        </div>
+
+        <div class="ignite-tracks-grid">
+          <div class="ignite-track-card">
+            <span class="card-category-badge" style="border-color: var(--primary-gold); color: var(--primary-gold);">TRACK 01</span>
+            <h3 class="card-title">Ignite Catalyst</h3>
+            <p class="card-description">Designed for emerging college tech clubs. Receive free workshop toolkits, mentorship from IIT Bombay researchers, and official event host rights.</p>
+            <button class="form-submit-btn" onclick="openIgniteModal('Ignite Catalyst')">Apply for Catalyst</button>
+          </div>
+
+          <div class="ignite-track-card">
+            <span class="card-category-badge" style="border-color: var(--primary-cyan); color: var(--primary-cyan);">TRACK 02</span>
+            <h3 class="card-title">Ignite Vanguard</h3>
+            <p class="card-description">Championship league for top-tier college technical societies. Compete in national innovation rankings and secure R&D incubation grants.</p>
+            <button class="form-submit-btn" onclick="openIgniteModal('Ignite Vanguard')">Apply for Vanguard</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- =========================================================
+         VIEW 6: KEYNOTE SPEAKERS LANDING PAGE
+    ========================================================= -->
+    <div class="view-container" id="view-keynotes">
+      <div class="page-hero-banner">
+        <div class="banner-content">
+          <div class="eyebrow-badge">GLOBAL LEADERSHIP // 18TH DECEMBER 2026</div>
+          <h1 class="banner-title">World Keynote Series</h1>
+          <p class="banner-lead">
+            Interact with Nobel Laureates, Space Exploration Leaders, Turing Award winners, and pioneer AI architects delivering keynote lectures at IIT Bombay.
+          </p>
+        </div>
+      </div>
+
+      <div class="section-container">
+        <div class="speakers-grid">
+          <div class="speaker-card" onclick="openSpeakerModal('Dr. Kip Thorne', 'Nobel Laureate in Physics', 'Theoretical Physicist known for his work on gravitational waves, black holes and Interstellar science consultancy.')">
+            <div class="speaker-avatar">KT</div>
+            <div class="speaker-name">Dr. Kip Thorne</div>
+            <div class="speaker-title">Nobel Laureate in Physics</div>
+            <p style="color: var(--text-muted); font-size: 13px;">Gravitational Waves & Black Hole Astrophysics</p>
+          </div>
+
+          <div class="speaker-card" onclick="openSpeakerModal('Dr. Yann LeCun', 'Chief AI Scientist & Turing Awardee', 'Pioneer of Convolutional Neural Networks and modern deep learning architecture.')">
+            <div class="speaker-avatar">YL</div>
+            <div class="speaker-name">Dr. Yann LeCun</div>
+            <div class="speaker-title">Turing Award Winner</div>
+            <p style="color: var(--text-muted); font-size: 13px;">Objective-Driven AI Architecture & Autonomous Intelligence</p>
+          </div>
+
+          <div class="speaker-card" onclick="openSpeakerModal('Dr. S. Somanath', 'Chairman, ISRO', 'Leader of India\'s historic Chandrayaan-3 Moon Landing and Aditya-L1 Solar Missions.')">
+            <div class="speaker-avatar">SS</div>
+            <div class="speaker-name">Dr. S. Somanath</div>
+            <div class="speaker-title">Chairman, ISRO</div>
+            <p style="color: var(--text-muted); font-size: 13px;">Deep Space Missions & The Future of Gaganyaan</p>
+          </div>
+
+          <div class="speaker-card" onclick="openSpeakerModal('Dr. Demis Hassabis', 'CEO DeepMind & Nobel Laureate', 'Pioneer behind AlphaFold, AlphaGo, and Gemini AI systems.')">
+            <div class="speaker-avatar">DH</div>
+            <div class="speaker-name">Dr. Demis Hassabis</div>
+            <div class="speaker-title">CEO, Google DeepMind</div>
+            <p style="color: var(--text-muted); font-size: 13px;">AI for Scientific Discovery & Protein Structure</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- =========================================================
+         FOOTER & CREDITS HUB
+    ========================================================= -->
+    <footer>
+      <div class="footer-grid">
+        <div>
+          <div class="brand-link" style="margin-bottom: 12px;">
+            <div class="brand-logo-icon">TF</div>
+            <div>
+              <div class="brand-title">TECHFEST '26</div>
+              <div class="brand-sub">IIT BOMBAY • 18TH DEC 2026</div>
+            </div>
+          </div>
+          <p class="footer-brand-desc">
+            Asia's Largest Science and Technological Festival organized by the students of Indian Institute of Technology Bombay.
+          </p>
+        </div>
+
+        <div>
+          <div class="footer-col-title">Navigation</div>
+          <ul class="footer-links">
+            <li><a onclick="switchView('overview')">Overview Page</a></li>
+            <li><a onclick="switchView('accommodation')">Hostel Accommodation</a></li>
+            <li><a onclick="switchView('workshops')">Technical Workshops</a></li>
+            <li><a onclick="switchView('robowars')">Robowars Arena</a></li>
+            <li><a onclick="switchView('ignite')">Ignite Network</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <div class="footer-col-title">Connect & Socials</div>
+          <p style="font-size: 12.5px; color: var(--text-muted); margin-bottom: 12px;">Follow official handles for live updates:</p>
+          <div class="social-icons-wrap">
+            <a href="https://www.linkedin.com/company/techfest-iit-bombay/" target="_blank" class="social-icon-btn" title="LinkedIn: @techfestiitbombay">
+              <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/></svg>
+            </a>
+
+            <a href="https://www.instagram.com/techfest_iitbombay/" target="_blank" class="social-icon-btn" title="Instagram: @techfest_iitbombay">
+              <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+            </a>
+
+            <a href="https://twitter.com/Techfest_IITB" target="_blank" class="social-icon-btn" title="X: @Techfest_IITB">
+              <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            </a>
+
+            <a href="https://www.youtube.com/user/techfestiitbombay" target="_blank" class="social-icon-btn" title="YouTube: Techfest IIT Bombay">
+              <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+            </a>
+
+            <a href="https://www.facebook.com/iitbombaytechfest" target="_blank" class="social-icon-btn" title="Facebook: @iitbombaytechfest">
+              <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+            </a>
+          </div>
+        </div>
+
+        <div>
+          <div class="footer-col-title">Campus Location</div>
+          <div class="location-card">
+            <div class="location-card-title">
+              <span>📍</span>
+              <span>IIT BOMBAY</span>
+            </div>
+            <div class="location-card-address">
+              Main Gate Road, Powai, Mumbai, Maharashtra 400076, India
+            </div>
+            <a href="https://maps.google.com/?q=19.1334,72.9133" target="_blank" class="maps-btn">
+              <span>Open in Google Maps</span>
+              <span>→</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div class="footer-credits-main">All Rights Reserved IIT Bombay</div>
+        <div class="footer-credits-sub">Designed and Engineered by Preksha Vijayvargiya, Ideated by Preksha Vijayvargiya</div>
+        <div style="margin-top: 10px;">
+          <button class="replay-intro-btn" id="replay-btn">
+            <span>↻ Replay 3D Space Intro</span>
+          </button>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- =========================================================
+       MODALS DECK
+  ========================================================= -->
+  
+  <div class="modal-overlay" id="modal-search">
+    <div class="modal-card">
+      <button class="modal-close-btn" onclick="closeModal('modal-search')">✕</button>
+      <h3 style="font-size: 20px; color: #fff; margin-bottom: 16px;">Global Techfest Search</h3>
+      <input type="text" class="search-input" placeholder="Type event, workshop, competition, or hostel query..." id="global-search-input" onkeyup="handleGlobalSearch()">
+      <div id="search-results-list" style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px;">
+        <div style="color: var(--text-muted); font-size: 13px;">Start typing to search across all Techfest portals...</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-register">
+    <div class="modal-card">
+      <button class="modal-close-btn" onclick="closeModal('modal-register')">✕</button>
+      <h3 style="font-size: 22px; color: #fff; margin-bottom: 6px;" id="reg-modal-title">Techfest '26 Delegate Registration</h3>
+      <p style="color: var(--text-muted); font-size: 13.5px; margin-bottom: 24px;">Create your official Techfest Delegate Passport ID.</p>
+      
+      <form onsubmit="handleFormSubmit(event, 'Delegate Passport Created! Your ID is TF26-PASSPORT-')" id="reg-form">
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input type="text" class="form-input" required placeholder="e.g. Rahul Sharma">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <input type="email" class="form-input" required placeholder="rahul@example.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Phone Number</label>
+          <input type="tel" class="form-input" required placeholder="+91 98765 43210">
+        </div>
+        <div class="form-group">
+          <label class="form-label">College / University Name</label>
+          <input type="text" class="form-input" required placeholder="e.g. IIT Bombay / VJTI / BITS Pilani">
+        </div>
+        <button type="submit" class="form-submit-btn">Generate Delegate ID</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-booking">
+    <div class="modal-card">
+      <button class="modal-close-btn" onclick="closeModal('modal-booking')">✕</button>
+      <h3 style="font-size: 22px; color: #fff; margin-bottom: 6px;" id="booking-modal-title">Book Hostel Accommodation</h3>
+      <p style="color: var(--text-muted); font-size: 13.5px; margin-bottom: 20px;">Official IIT Bombay Campus Stay (18th December 2026)</p>
+
+      <form onsubmit="handleBookingSubmit(event)" id="booking-form">
+        <input type="hidden" id="booking-pass-type">
+        <input type="hidden" id="booking-rate">
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input type="text" class="form-input" required placeholder="Primary Applicant Name">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Check-in Date</label>
+          <select class="form-select" id="checkin-date" onchange="calcTotalCost()">
+            <option value="Dec 18">December 18, 2026</option>
+            <option value="Dec 19">December 19, 2026</option>
+            <option value="Dec 20">December 20, 2026</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Number of Days</label>
+          <select class="form-select" id="stay-days" onchange="calcTotalCost()">
+            <option value="1">1 Day</option>
+            <option value="2">2 Days</option>
+            <option value="3" selected>3 Days (Full Festival)</option>
+          </select>
+        </div>
+        <div style="background: rgba(56, 189, 248, 0.12); border: 1px solid var(--primary-cyan); padding: 14px; border-radius: 10px; margin-bottom: 20px; font-size: 14px; font-weight: 700; color: #fff; display: flex; justify-content: space-between;">
+          <span>Total Payable:</span>
+          <span id="booking-total-display" style="color: var(--primary-gold);">₹1,497</span>
+        </div>
+        <button type="submit" class="form-submit-btn">Confirm & Issue Hostel Pass</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification Deck -->
+  <div id="toast-container"></div>
+
+  <!-- =========================================================
+       AUDIO SYNTHESIZER & INTERACTIVE MOTION ENGINE
+  ========================================================= -->
+  <script>
+    // -------------------------------------------------------------
+    // CRAZY UNIVERSE AUDIO SYNTHESIZER (WEB AUDIO API)
+    // -------------------------------------------------------------
+    let audioCtx = null;
+    let soundEnabled = true;
+
+    function initAudio() {
+      if (!audioCtx) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) audioCtx = new AudioCtx();
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function playSound(type) {
+      if (!soundEnabled) return;
+      initAudio();
+      if (!audioCtx) return;
+
+      const now = audioCtx.currentTime;
+
+      if (type === 'click') {
+        // Quantum Laser Pulse Sweep
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(520, now);
+        osc.frequency.exponentialRampToValueAtTime(1250, now + 0.05);
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.05);
+      } else if (type === 'hover') {
+        // Celestial Shimmer Chime
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, now);
+        osc.frequency.exponentialRampToValueAtTime(1320, now + 0.04);
+        gain.gain.setValueAtTime(0.04, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.04);
+      } else if (type === 'tab') {
+        // Space Riser Harmonic Glissando
+        const frequencies = [440, 554.37, 659.25, 880];
+        frequencies.forEach((freq, idx) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.02);
+          gain.gain.setValueAtTime(0.06, now + idx * 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.02 + 0.12);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now + idx * 0.02);
+          osc.stop(now + idx * 0.02 + 0.12);
+        });
+      } else if (type === 'modal') {
+        // Cosmic Riser Sweep
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(300, now);
+        osc.frequency.exponentialRampToValueAtTime(1400, now + 0.15);
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.15);
+      } else if (type === 'boom') {
+        // Massive Cosmic Supernova Shockwave (Sub-bass + Noise Sweep)
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(180, now);
+        osc.frequency.exponentialRampToValueAtTime(24, now + 1.2);
+        gain.gain.setValueAtTime(0.5, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 1.2);
+      }
+    }
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      const btn = document.getElementById('sound-btn');
+      btn.innerHTML = soundEnabled ? '<span>🔊 Sound ON</span>' : '<span style="color: var(--text-muted);">🔇 Muted</span>';
+      if (soundEnabled) playSound('click');
+    }
+
+    // Dynamic Ripple & Sound Trigger on Click
+    document.addEventListener('click', function(e) {
+      playSound('click');
+
+      const target = e.target.closest('button, .btn-solid-lg, .btn-outline-lg, .nav-btn-primary, .switcher-tab, .social-icon-btn, .landing-card, .workshop-card, .tariff-card, .speaker-card, .icon-btn');
+      if (target) {
+        const rect = target.getBoundingClientRect();
+        const ripple = document.createElement('span');
+        ripple.className = 'btn-ripple';
+        ripple.style.left = (e.clientX - rect.left) + 'px';
+        ripple.style.top = (e.clientY - rect.top) + 'px';
+        target.appendChild(ripple);
+        setTimeout(() => ripple.remove(), 650);
+      }
+    });
+
+    // Sound FX on Hover
+    document.querySelectorAll('button, a, .landing-card, .workshop-card, .tariff-card, .speaker-card, .switcher-tab').forEach(el => {
+      el.addEventListener('mouseenter', () => playSound('hover'));
+    });
+
+    // Custom Cyber Cursor Position Tracking
+    const cursor = document.getElementById('cyber-cursor');
+    const cursorTrail = document.getElementById('cyber-cursor-trail');
+
+    document.addEventListener('mousemove', (e) => {
+      const x = e.clientX;
+      const y = e.clientY;
+      cursor.style.left = `${x}px`;
+      cursor.style.top = `${y}px`;
+      cursorTrail.style.left = `${x}px`;
+      cursorTrail.style.top = `${y}px`;
+    });
+
+    document.querySelectorAll('button, a, .landing-card, .switcher-tab, .workshop-card').forEach(el => {
+      el.addEventListener('mouseenter', () => document.body.classList.add('hovering-link'));
+      el.addEventListener('mouseleave', () => document.body.classList.remove('hovering-link'));
+    });
+
+    // 3D Tilt Effect on Landing & Feature Cards
+    document.querySelectorAll('.landing-card, .workshop-card, .tariff-card, .speaker-card').forEach(card => {
+      card.addEventListener('mousemove', (e) => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+        const tiltX = (y - centerY) / 18;
+        const tiltY = (centerX - x) / 18;
+        card.style.transform = `perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) translateY(-4px)`;
+        card.style.setProperty('--mouse-x', `${x}px`);
+        card.style.setProperty('--mouse-y', `${y}px`);
+      });
+
+      card.addEventListener('mouseleave', () => {
+        card.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) translateY(0px)';
+      });
+    });
+
+    // -------------------------------------------------------------
+    // GLOBAL CONSTELLATION NETWORK BACKGROUND CANVAS
+    // -------------------------------------------------------------
+    function initGlobalConstellationCanvas() {
+      const bgCanvas = document.getElementById('global-bg-canvas');
+      const ctx = bgCanvas.getContext('2d');
+      let w, h;
+      const particles = [];
+      const particleCount = 110;
+
+      function resize() {
+        w = bgCanvas.width = window.innerWidth;
+        h = bgCanvas.height = window.innerHeight;
+      }
+      window.addEventListener('resize', resize);
+      resize();
+
+      for (let i = 0; i < particleCount; i++) {
+        particles.push({
+          x: Math.random() * w,
+          y: Math.random() * h,
+          vx: (Math.random() - 0.5) * 0.6,
+          vy: (Math.random() - 0.5) * 0.6,
+          radius: Math.random() * 1.5 + 0.8
+        });
+      }
+
+      function drawConstellation() {
+        ctx.clearRect(0, 0, w, h);
+        
+        // Draw Particles & Interconnecting Web Lines
+        for (let i = 0; i < particleCount; i++) {
+          let p1 = particles[i];
+          p1.x += p1.vx;
+          p1.y += p1.vy;
+
+          if (p1.x < 0 || p1.x > w) p1.vx *= -1;
+          if (p1.y < 0 || p1.y > h) p1.vy *= -1;
+
+          ctx.fillStyle = 'rgba(56, 189, 248, 0.7)';
+          ctx.beginPath();
+          ctx.arc(p1.x, p1.y, p1.radius, 0, Math.PI * 2);
+          ctx.fill();
+
+          for (let j = i + 1; j < particleCount; j++) {
+            let p2 = particles[j];
+            let dx = p1.x - p2.x;
+            let dy = p1.y - p2.y;
+            let dist = Math.sqrt(dx * dx + dy * dy);
+
+            if (dist < 130) {
+              ctx.strokeStyle = `rgba(56, 189, 248, ${0.25 * (1 - dist / 130)})`;
+              ctx.lineWidth = 0.8;
+              ctx.beginPath();
+              ctx.moveTo(p1.x, p1.y);
+              ctx.lineTo(p2.x, p2.y);
+              ctx.stroke();
+            }
+          }
+        }
+        requestAnimationFrame(drawConstellation);
+      }
+      drawConstellation();
+    }
+    initGlobalConstellationCanvas();
+
+    // -------------------------------------------------------------
+    // THREE.JS SETUP & REAL EARTH SHADER / TEXTURE GENERATOR
+    // -------------------------------------------------------------
+    const container = document.getElementById('three-canvas-container');
+    const introScreen = document.getElementById('intro-screen');
+    const siteWrapper = document.getElementById('site-wrapper');
+    const mesmerizingText = document.getElementById('mesmerizing-text');
+    const mesmerizingSub = document.getElementById('mesmerizing-sub');
+    const targetHud = document.getElementById('target-hud');
+    const timelineFill = document.getElementById('timeline-fill');
+    const skipBtn = document.getElementById('skip-btn');
+    const replayBtn = document.getElementById('replay-btn');
+    const blastOverlay = document.getElementById('blast-flash-overlay');
+
+    let scene, camera, renderer;
+    let earthMesh, cloudsMesh, atmosphereMesh, starField;
+    let orbitRings = [];
+    let satellites = [];
+    let iitbMarkerGroup;
+
+    let startTime = null;
+    let isIntroActive = true;
+    let animationId = null;
+
+    function createEarthTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 2048;
+      canvas.height = 1024;
+      const ctx = canvas.getContext('2d');
+
+      const oceanGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      oceanGrad.addColorStop(0, '#0a192f');
+      oceanGrad.addColorStop(0.5, '#0f2b48');
+      oceanGrad.addColorStop(1, '#081426');
+      ctx.fillStyle = oceanGrad;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = '#224422';
+      ctx.beginPath();
+      ctx.ellipse(1400, 350, 320, 200, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#2d5a27';
+      ctx.beginPath();
+      ctx.moveTo(1400, 380);
+      ctx.lineTo(1460, 420);
+      ctx.lineTo(1430, 500);
+      ctx.lineTo(1390, 440);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.ellipse(1150, 520, 180, 260, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.ellipse(550, 350, 200, 180, -0.2, 0, Math.PI * 2);
+      ctx.ellipse(720, 620, 140, 220, 0.3, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.ellipse(1720, 680, 110, 90, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#ffaa00';
+      for (let i = 0; i < 900; i++) {
+        let lx = Math.random() * canvas.width;
+        let ly = Math.random() * canvas.height;
+        if ((lx > 1100 && lx < 1600 && ly > 250 && ly < 550) || (lx > 400 && lx < 750 && ly > 250 && ly < 500)) {
+          ctx.beginPath();
+          ctx.arc(lx, ly, Math.random() * 1.8 + 0.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      const northCap = ctx.createLinearGradient(0, 0, 0, 120);
+      northCap.addColorStop(0, 'rgba(240, 249, 255, 0.9)');
+      northCap.addColorStop(1, 'rgba(240, 249, 255, 0)');
+      ctx.fillStyle = northCap;
+      ctx.fillRect(0, 0, canvas.width, 120);
+
+      const southCap = ctx.createLinearGradient(0, canvas.height - 100, 0, canvas.height);
+      southCap.addColorStop(0, 'rgba(240, 249, 255, 0)');
+      southCap.addColorStop(1, 'rgba(240, 249, 255, 0.9)');
+      ctx.fillStyle = southCap;
+      ctx.fillRect(0, canvas.height - 100, canvas.width, 100);
+
+      return new THREE.CanvasTexture(canvas);
+    }
+
+    function createCloudTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1024;
+      canvas.height = 512;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = 'rgba(0,0,0,0)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+      for (let i = 0; i < 200; i++) {
+        ctx.beginPath();
+        let cx = Math.random() * canvas.width;
+        let cy = Math.random() * canvas.height;
+        let r = Math.random() * 60 + 20;
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      return new THREE.CanvasTexture(canvas);
+    }
+
+    function initThreeUniverse() {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 1000);
+      camera.position.set(0, 0, 18);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setSize(w, h);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      container.appendChild(renderer.domElement);
+
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+      scene.add(ambientLight);
+
+      const sunLight = new THREE.DirectionalLight(0xffffff, 1.2);
+      sunLight.position.set(20, 10, 20);
+      scene.add(sunLight);
+
+      const earthGeo = new THREE.SphereGeometry(4.5, 64, 64);
+      const earthMat = new THREE.MeshPhongMaterial({
+        map: createEarthTexture(),
+        shininess: 25,
+        specular: new THREE.Color(0x113366)
+      });
+      earthMesh = new THREE.Mesh(earthGeo, earthMat);
+      scene.add(earthMesh);
+
+      const cloudGeo = new THREE.SphereGeometry(4.58, 64, 64);
+      const cloudMat = new THREE.MeshPhongMaterial({
+        map: createCloudTexture(),
+        transparent: true,
+        opacity: 0.8
+      });
+      cloudsMesh = new THREE.Mesh(cloudGeo, cloudMat);
+      scene.add(cloudsMesh);
+
+      const atmosGeo = new THREE.SphereGeometry(4.85, 64, 64);
+      const atmosMat = new THREE.MeshBasicMaterial({
+        color: 0x38bdf8,
+        transparent: true,
+        opacity: 0.15,
+        side: THREE.BackSide
+      });
+      atmosphereMesh = new THREE.Mesh(atmosGeo, atmosMat);
+      scene.add(atmosphereMesh);
+
+      const starsGeo = new THREE.BufferGeometry();
+      const starCount = 5500;
+      const starPos = new Float32Array(starCount * 3);
+      for (let i = 0; i < starCount * 3; i += 3) {
+        starPos[i] = (Math.random() - 0.5) * 190;
+        starPos[i + 1] = (Math.random() - 0.5) * 190;
+        starPos[i + 2] = (Math.random() - 0.5) * 190;
+      }
+      starsGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+      const starsMat = new THREE.PointsMaterial({
+        color: 0xffffff,
+        size: 0.75,
+        transparent: true,
+        opacity: 0.85
+      });
+      starField = new THREE.Points(starsGeo, starsMat);
+      scene.add(starField);
+
+      const ringAngles = [0, Math.PI / 4, -Math.PI / 3, Math.PI / 6];
+      const ringColors = [0x38bdf8, 0xfbbf24, 0x3b82f6, 0x10b981];
+
+      ringAngles.forEach((angle, idx) => {
+        const ringGeo = new THREE.RingGeometry(5.8 + idx * 0.7, 5.83 + idx * 0.7, 64);
+        const ringMat = new THREE.MeshBasicMaterial({
+          color: ringColors[idx],
+          side: THREE.DoubleSide,
+          transparent: true,
+          opacity: 0.4
+        });
+        const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+        ringMesh.rotation.x = Math.PI / 2 + angle;
+        ringMesh.rotation.y = angle * 0.5;
+        scene.add(ringMesh);
+        orbitRings.push(ringMesh);
+
+        const satGeo = new THREE.SphereGeometry(0.12, 16, 16);
+        const satMat = new THREE.MeshBasicMaterial({ color: ringColors[idx] });
+        const satMesh = new THREE.Mesh(satGeo, satMat);
+        scene.add(satMesh);
+        satellites.push({ mesh: satMesh, radius: 5.8 + idx * 0.7, angle: angle, speed: 0.8 + idx * 0.3 });
+      });
+
+      iitbMarkerGroup = new THREE.Group();
+      const markerGeo = new THREE.SphereGeometry(0.14, 16, 16);
+      const markerMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+      const markerPoint = new THREE.Mesh(markerGeo, markerMat);
+      iitbMarkerGroup.add(markerPoint);
+
+      const lat = (19.1334 * Math.PI) / 180;
+      const lon = (72.9133 * Math.PI) / 180;
+      const r = 4.52;
+      
+      markerPoint.position.x = r * Math.cos(lat) * Math.sin(lon);
+      markerPoint.position.y = r * Math.sin(lat);
+      markerPoint.position.z = r * Math.cos(lat) * Math.cos(lon);
+
+      earthMesh.add(iitbMarkerGroup);
+    }
+
+    function getIITBScreenPosition() {
+      if (!iitbMarkerGroup || !camera) return { x: -1000, y: -1000, visible: false };
+      const vector = new THREE.Vector3();
+      iitbMarkerGroup.children[0].getWorldPosition(vector);
+      
+      const cameraDir = camera.position.clone().sub(vector).normalize();
+      const dot = vector.clone().normalize().dot(cameraDir);
+      
+      vector.project(camera);
+      const x = (vector.x * .5 + .5) * window.innerWidth;
+      const y = (-(vector.y * .5) + .5) * window.innerHeight;
+      
+      return { x: x, y: y, visible: dot > 0.1 };
+    }
+
+    let boomTriggered = false;
+
+    function renderSequence(now) {
+      if (!startTime) startTime = now;
+      const elapsed = (now - startTime) / 1000;
+
+      const totalTime = 6.0;
+      const progress = Math.min(100, (elapsed / totalTime) * 100);
+      timelineFill.style.width = progress + '%';
+
+      if (earthMesh) earthMesh.rotation.y = elapsed * 0.22;
+      if (cloudsMesh) cloudsMesh.rotation.y = elapsed * 0.28;
+      if (starField) starField.rotation.y = elapsed * 0.04;
+
+      satellites.forEach((sat, i) => {
+        const satAngle = elapsed * sat.speed * 1.5;
+        sat.mesh.position.x = Math.cos(satAngle) * sat.radius;
+        sat.mesh.position.z = Math.sin(satAngle) * sat.radius;
+        sat.mesh.position.y = Math.sin(satAngle) * (sat.radius * 0.3);
+      });
+
+      if (elapsed < 2.2) {
+        mesmerizingText.classList.add('active');
+        mesmerizingSub.classList.add('active');
+      }
+
+      if (elapsed >= 2.2 && elapsed < 4.0) {
+        mesmerizingText.classList.remove('active');
+        mesmerizingSub.classList.remove('active');
+
+        const targetRotY = -0.4;
+        earthMesh.rotation.y += (targetRotY - earthMesh.rotation.y) * 0.1;
+
+        const pos = getIITBScreenPosition();
+        if (pos.visible) {
+          targetHud.style.display = 'block';
+          targetHud.style.left = `${pos.x}px`;
+          targetHud.style.top = `${pos.y}px`;
+        } else {
+          targetHud.style.display = 'none';
+        }
+      }
+
+      if (elapsed >= 4.0 && elapsed < 5.2) {
+        const zoomProgress = (elapsed - 4.0) / 1.2;
+        camera.position.z = 18 - (zoomProgress * 13.2);
+      }
+
+      if (elapsed >= 5.2 && elapsed < 6.0) {
+        targetHud.style.display = 'none';
+
+        if (!boomTriggered) {
+          boomTriggered = true;
+          playSound('boom');
+        }
+        
+        const blastTime = elapsed - 5.2;
+        if (blastTime < 0.2) {
+          blastOverlay.style.opacity = '1';
+        } else {
+          blastOverlay.style.opacity = Math.max(0, 1 - (blastTime - 0.2) / 0.6);
+        }
+
+        camera.position.x = (Math.random() - 0.5) * 0.7;
+        camera.position.y = (Math.random() - 0.5) * 0.7;
+      }
+
+      if (elapsed >= 6.0 && isIntroActive) {
+        enterMainWebsite();
+      }
+
+      if (isIntroActive) {
+        animationId = requestAnimationFrame(renderSequence);
+        renderer.render(scene, camera);
+      }
+    }
+
+    function enterMainWebsite() {
+      isIntroActive = false;
+      targetHud.style.display = 'none';
+      introScreen.style.opacity = '0';
+      introScreen.style.pointerEvents = 'none';
+      setTimeout(() => {
+        introScreen.style.visibility = 'hidden';
+        siteWrapper.classList.add('ready');
+        initIndiaNetworkMapCanvas();
+      }, 600);
+    }
+
+    skipBtn.addEventListener('click', enterMainWebsite);
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && isIntroActive) enterMainWebsite();
+    });
+
+    replayBtn.addEventListener('click', () => {
+      siteWrapper.classList.remove('ready');
+      introScreen.style.visibility = 'visible';
+      introScreen.style.opacity = '1';
+      introScreen.style.pointerEvents = 'auto';
+      isIntroActive = true;
+      boomTriggered = false;
+      startTime = performance.now();
+      camera.position.set(0, 0, 18);
+      blastOverlay.style.opacity = '0';
+      if (!animationId) {
+        animationId = requestAnimationFrame(renderSequence);
+      }
+    });
+
+    window.addEventListener('resize', () => {
+      if (!camera || !renderer) return;
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    window.addEventListener('load', () => {
+      initThreeUniverse();
+      animationId = requestAnimationFrame(renderSequence);
+    });
+
+    // -------------------------------------------------------------
+    // INDIA NETWORK & IIT BOMBAY CONNECTIONS MAP CANVAS
+    // -------------------------------------------------------------
+    function initIndiaNetworkMapCanvas() {
+      const mapCanvas = document.getElementById('india-map-canvas');
+      if (!mapCanvas) return;
+      const ctx = mapCanvas.getContext('2d');
+      let t = 0;
+
+      // Cities coordinates normalized (0..1)
+      const cities = [
+        { name: 'IIT Bombay (Hub)', x: 0.35, y: 0.62, hub: true },
+        { name: 'Delhi NCR', x: 0.44, y: 0.30 },
+        { name: 'Bengaluru', x: 0.44, y: 0.80 },
+        { name: 'Hyderabad', x: 0.48, y: 0.66 },
+        { name: 'Chennai', x: 0.50, y: 0.83 },
+        { name: 'Kolkata', x: 0.78, y: 0.48 },
+        { name: 'Ahmedabad', x: 0.28, y: 0.48 },
+        { name: 'Pune', x: 0.38, y: 0.66 },
+        { name: 'Jaipur', x: 0.38, y: 0.38 },
+        { name: 'Guwahati', x: 0.88, y: 0.40 },
+        { name: 'Kanpur', x: 0.54, y: 0.38 }
+      ];
+
+      function drawIndiaMap() {
+        mapCanvas.width = mapCanvas.clientWidth;
+        mapCanvas.height = mapCanvas.clientHeight;
+        const w = mapCanvas.width;
+        const h = mapCanvas.height;
+
+        ctx.clearRect(0, 0, w, h);
+
+        t += 0.02;
+
+        const hubCity = cities[0];
+        const hx = hubCity.x * w;
+        const hy = hubCity.y * h;
+
+        // Draw connections from IIT Bombay to all other city nodes
+        for (let i = 1; i < cities.length; i++) {
+          const c = cities[i];
+          const cx = c.x * w;
+          const cy = c.y * h;
+
+          // Glowing connecting line
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.25)';
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.moveTo(hx, hy);
+          ctx.lineTo(cx, cy);
+          ctx.stroke();
+
+          // Pulse signal particle travelling along connection line
+          const progress = (t * 0.8 + i * 0.3) % 1;
+          const px = hx + (cx - hx) * progress;
+          const py = hy + (cy - hy) * progress;
+
+          ctx.fillStyle = '#fbbf24';
+          ctx.beginPath();
+          ctx.arc(px, py, 3, 0, Math.PI * 2);
+          ctx.fill();
+
+          // City node point
+          ctx.fillStyle = '#38bdf8';
+          ctx.beginPath();
+          ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = 'rgba(203, 213, 225, 0.8)';
+          ctx.font = '9px "JetBrains Mono"';
+          ctx.fillText(c.name, cx + 6, cy + 3);
+        }
+
+        // IIT Bombay Main Hub Focal Beacon
+        const ringRadius = 8 + Math.sin(t * 3) * 4;
+        ctx.strokeStyle = '#fbbf24';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(hx, hy, ringRadius, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.fillStyle = '#fbbf24';
+        ctx.beginPath();
+        ctx.arc(hx, hy, 7, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 11px "Plus Jakarta Sans"';
+        ctx.fillText('★ IIT BOMBAY', hx + 12, hy + 4);
+
+        requestAnimationFrame(drawIndiaMap);
+      }
+      drawIndiaMap();
+    }
+
+    // -------------------------------------------------------------
+    // INTERACTIVE NAVIGATION & VIEWS SWITCHER CONTROLLER
+    // -------------------------------------------------------------
+    function switchView(viewId) {
+      playSound('tab');
+      
+      document.querySelectorAll('.view-container').forEach(el => {
+        el.classList.remove('active-view');
+      });
+      
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.switcher-tab').forEach(el => el.classList.remove('active'));
+
+      const targetView = document.getElementById(`view-${viewId}`);
+      if (targetView) {
+        targetView.classList.add('active-view');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      const activeNav = document.getElementById(`nav-${viewId}`);
+      if (activeNav) activeNav.classList.add('active');
+
+      const activeTab = document.getElementById(`tab-${viewId}`);
+      if (activeTab) activeTab.classList.add('active');
+    }
+
+    function filterWorkshops(cat, btn) {
+      playSound('tab');
+      document.querySelectorAll('.filter-chip').forEach(el => el.classList.remove('active'));
+      btn.classList.add('active');
+
+      document.querySelectorAll('.workshop-card').forEach(card => {
+        if (cat === 'all' || card.getAttribute('data-cat') === cat) {
+          card.style.display = 'flex';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+
+    function searchCompetitions() {
+      const q = document.getElementById('comp-search').value.toLowerCase();
+      document.querySelectorAll('.comp-item').forEach(item => {
+        const title = item.getAttribute('data-title').toLowerCase();
+        if (title.includes(q)) {
+          item.style.display = 'flex';
+        } else {
+          item.style.display = 'none';
+        }
+      });
+    }
+
+    function toggleFaq(el) {
+      playSound('click');
+      el.classList.toggle('open');
+    }
+
+    function openModal(modalId) {
+      playSound('modal');
+      document.getElementById(modalId).classList.add('open');
+    }
+
+    function closeModal(modalId) {
+      playSound('click');
+      document.getElementById(modalId).classList.remove('open');
+    }
+
+    function openSearchModal() {
+      openModal('modal-search');
+      setTimeout(() => document.getElementById('global-search-input').focus(), 100);
+    }
+
+    function openRegistrationModal(title) {
+      document.getElementById('reg-modal-title').innerText = title || 'Techfest \'26 Registration';
+      openModal('modal-register');
+    }
+
+    function openBookingModal(passType, rate) {
+      document.getElementById('booking-pass-type').value = passType;
+      document.getElementById('booking-rate').value = rate;
+      document.getElementById('booking-modal-title').innerText = `Book ${passType}`;
+      calcTotalCost();
+      openModal('modal-booking');
+    }
+
+    function calcTotalCost() {
+      const rate = parseInt(document.getElementById('booking-rate').value || 499);
+      const days = parseInt(document.getElementById('stay-days').value || 3);
+      const total = rate * days;
+      document.getElementById('booking-total-display').innerText = `₹${total.toLocaleString('en-IN')}`;
+    }
+
+    function openWorkshopModal(wName, price) {
+      showToast(`Opening registration portal for ${wName}...`);
+      openRegistrationModal(`Register for ${wName} (₹${price})`);
+    }
+
+    function openCompetitionModal(cName) {
+      openRegistrationModal(`Team Registration: ${cName}`);
+    }
+
+    function openIgniteModal(track) {
+      openRegistrationModal(track ? `Apply for ${track}` : 'Ignite Club Accreditation');
+    }
+
+    function openSpeakerModal(name, title, bio) {
+      showToast(`Speaker Session: ${name} — ${title}`);
+    }
+
+    function downloadRulebook(filename) {
+      showToast(`Downloading Official Rulebook: ${filename}`);
+    }
+
+    function handleFormSubmit(e, prefix) {
+      e.preventDefault();
+      const randId = Math.floor(1000 + Math.random() * 9000);
+      showToast(`Success! ${prefix}${randId}`);
+      closeModal('modal-register');
+    }
+
+    function handleBookingSubmit(e) {
+      e.preventDefault();
+      const randId = Math.floor(100000 + Math.random() * 900000);
+      const type = document.getElementById('booking-pass-type').value;
+      showToast(`Pass Generated! Accommodation ID: TF26-ACC-${randId} (${type})`);
+      closeModal('modal-booking');
+    }
+
+    function handleGlobalSearch() {
+      const query = document.getElementById('global-search-input').value.toLowerCase();
+      const resultsContainer = document.getElementById('search-results-list');
+      
+      if (!query.trim()) {
+        resultsContainer.innerHTML = '<div style="color: var(--text-muted); font-size: 13px;">Start typing to search...</div>';
+        return;
+      }
+
+      const items = [
+        { name: 'Hostel Accommodation Booking (18th Dec 2026)', view: 'accommodation', tag: 'ACC' },
+        { name: 'International Robowars 60kg Combat', view: 'robowars', tag: 'COMP' },
+        { name: 'Generative AI & LLM Workshop', view: 'workshops', tag: 'WORKSHOP' },
+        { name: 'Boeing Aeromodelling Competition', view: 'robowars', tag: 'COMP' },
+        { name: 'Ignite Catalyst College Network', view: 'ignite', tag: 'IGNITE' },
+        { name: 'Dr. Kip Thorne Keynote Lecture', view: 'keynotes', tag: 'SPEAKER' },
+        { name: 'Humanoid Robotics & ROS2 Workshop', view: 'workshops', tag: 'WORKSHOP' }
+      ];
+
+      const matches = items.filter(i => i.name.toLowerCase().includes(query));
+      if (matches.length === 0) {
+        resultsContainer.innerHTML = '<div style="color: var(--text-muted); font-size: 13px;">No matching festival items found.</div>';
+        return;
+      }
+
+      resultsContainer.innerHTML = matches.map(m => `
+        <div style="background: rgba(255,255,255,0.06); padding: 12px 16px; border-radius: 8px; cursor: pointer; display: flex; justify-content: space-between; align-items: center;" onclick="switchView('${m.view}'); closeModal('modal-search');">
+          <span style="color: #fff; font-weight: 600; font-size: 14px;">${m.name}</span>
+          <span class="top-bar-badge">${m.tag}</span>
+        </div>
+      `).join('');
+    }
+
+    function showToast(message) {
+      playSound('modal');
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = 'toast-msg';
+      toast.innerHTML = `<span>⚡</span><span>${message}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+  </script>
+</body>
+</html>
